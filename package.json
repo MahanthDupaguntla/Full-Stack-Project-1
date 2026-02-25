@@ -1,0 +1,14 @@
+{
+    "name": "virtual-art-gallery",
+    "version": "1.0.0",
+    "description": "Virtual Art Gallery - Full Stack Platform",
+    "scripts": {
+        "dev:frontend": "cd frontend && npm run dev",
+        "dev:backend": "cd backend && npm run dev",
+        "install:all": "cd backend && npm install && cd ../frontend && npm install",
+        "seed": "cd backend && node seed.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC"
+}
