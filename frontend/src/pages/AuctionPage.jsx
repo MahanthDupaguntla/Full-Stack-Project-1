@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import io from 'socket.io-client';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import AuctionTimer from '../components/AuctionTimer';
 
-const socket = io('http://localhost:5000');
+const POLL_INTERVAL = 3000; // Poll every 3 seconds
 
 const AuctionPage = () => {
     const { user } = useAuth();
@@ -22,25 +21,27 @@ const AuctionPage = () => {
         };
         fetchAuctions();
 
-        socket.on('bidUpdate', (data) => {
-            setAuctions(prev => prev.map(a =>
-                a._id === data.auctionId ? { ...a, highestBid: data.amount, highestBidder: data.bidderName } : a
-            ));
-        });
-
-        return () => socket.off('bidUpdate');
+        // Poll for bid updates (replaces Socket.io for Vercel deployment)
+        const interval = setInterval(fetchAuctions, POLL_INTERVAL);
+        return () => clearInterval(interval);
     }, []);
 
-    const handlePlaceBid = (auctionId) => {
+    const handlePlaceBid = async (auctionId) => {
         if (!user) return alert('Please login to bid');
         if (!bidAmount) return;
 
-        socket.emit('placeBid', {
-            auctionId,
-            bidder: user._id,
-            bidderName: user.name,
-            amount: Number(bidAmount)
-        });
+        try {
+            await axios.post(`/api/auctions/${auctionId}/bid`, {
+                bidder: user._id,
+                bidderName: user.name,
+                amount: Number(bidAmount)
+            });
+            // Refresh auctions after placing bid
+            const res = await axios.get('/api/auctions');
+            setAuctions(res.data);
+        } catch (err) {
+            alert(err.response?.data?.error || 'Failed to place bid');
+        }
         setBidAmount('');
     };
 
